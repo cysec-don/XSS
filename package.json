@@ -1,0 +1,15 @@
+{
+  "name": "vulnlab-xss",
+  "version": "1.0.0",
+  "description": "VulnLab - Intentionally Vulnerable XSS Playground by Cysec Don",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "author": "Cysec Don <cysecdon@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

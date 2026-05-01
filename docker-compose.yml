@@ -1,0 +1,39 @@
+# VulnLab XSS Playground - Docker Compose
+# Author: Cysec Don (cysecdon@gmail.com)
+#
+# ⚠️  WARNING: This application is INTENTIONALLY VULNERABLE.
+#    DO NOT expose this to the public internet.
+#
+# Usage:
+#   docker compose up -d          # Start the lab
+#   docker compose down           # Stop the lab
+#   docker compose logs -f        # View logs
+#   docker compose build --no-cache  # Rebuild from scratch
+
+services:
+  vulnlab:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vulnlab-xss
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Optional: BeEF (Browser Exploitation Framework) for advanced exercises
+  # Uncomment the section below to run BeEF alongside VulnLab
+  # beef:
+  #   image: beefproject/beef
+  #   container_name: beef-xss
+  #   ports:
+  #     - "3000:3000"
+  #   restart: unless-stopped
