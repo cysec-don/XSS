@@ -1,5 +1,5 @@
 /**
- * VulnLab - Intentionally Vulnerable XSS Playground
+ * SpectreLab - Intentionally Vulnerable XSS Playground
  * Author: Cysec Don (cysecdon@gmail.com)
  *
  * WARNING: This application is INTENTIONALLY VULNERABLE.
@@ -67,52 +67,37 @@ function getLevelInfo(type, level) {
 //  SANITIZATION / FILTER FUNCTIONS
 // =============================================
 
-// Strip <script> tags (case-insensitive, greedy)
 function stripScriptTags(str) {
   return str.replace(/<script[\s\S]*?<\/script\s*>/gi, '');
 }
 
-// Strip all on* event handler attributes
 function stripEventHandlers(str) {
   return str.replace(/\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi, '');
 }
 
-// HTML-encode angle brackets
 function encodeAngleBrackets(str) {
   return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// Escape for JS string context (single-quoted)
 function escapeForJSString(str) {
   return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
 
-// DOMPurify-lite: strip script, on* handlers, javascript: URLs, and dangerous tags
 function domPurifyLite(str) {
   let s = str;
-  // Strip script tags
   s = s.replace(/<script[\s\S]*?<\/script\s*>/gi, '');
-  // Strip event handlers
   s = s.replace(/\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi, '');
-  // Strip javascript: URLs
   s = s.replace(/javascript\s*:/gi, '');
-  // Strip dangerous tags: iframe, object, embed, form, base
   s = s.replace(/<\/?(iframe|object|embed|form|base)[^>]*>/gi, '');
   return s;
 }
 
-// Full DOMPurify simulation (very aggressive)
 function domPurifyFull(str) {
   let s = domPurifyLite(str);
-  // Also strip svg (mutation XSS vector)
   s = s.replace(/<\/?svg[^>]*>/gi, '');
-  // Strip math tags
   s = s.replace(/<\/?math[^>]*>/gi, '');
-  // Strip details/marquee
   s = s.replace(/<\/?(details|marquee|isindex)[^>]*>/gi, '');
-  // Strip data: URLs
   s = s.replace(/data\s*:/gi, '');
-  // Strip vbscript:
   s = s.replace(/vbscript\s*:/gi, '');
   return s;
 }
@@ -147,7 +132,6 @@ app.post('/comments', (req, res) => {
   let author = req.body.author || 'Anonymous';
   let text = req.body.text || '';
 
-  // Apply stored XSS filters based on level
   switch (level) {
     case 2:
       text = stripScriptTags(text);
@@ -179,7 +163,7 @@ app.get('/profile/:username', (req, res) => {
   res.send(renderProfilePage(profile, req.params.username, level));
 });
 
-// --- UPDATE PROFILE (Stored XSS via bio) ---
+// --- UPDATE PROFILE ---
 app.post('/profile/:username', (req, res) => {
   const level = parseInt(req.body.level) || 1;
   const profile = profiles[req.params.username];
@@ -195,11 +179,14 @@ app.get('/admin', (req, res) => {
   res.send(renderAdminPage());
 });
 
-// --- JSONP ENDPOINT (for CSP bypass in reflected level 5) ---
+// --- PROGRESS DASHBOARD ---
+app.get('/progress', (req, res) => {
+  res.send(renderProgressPage());
+});
+
+// --- JSONP ENDPOINT ---
 app.get('/api/callback', (req, res) => {
   const cb = req.query.cb || 'callback';
-  // VULNERABLE: JSONP endpoint allows arbitrary callback names
-  // This is the "trusted" endpoint that CSP allows via 'self'
   res.type('application/javascript');
   res.send(`${cb}({data:"JSONP response",user:"guest"})`);
 });
@@ -232,7 +219,8 @@ function renderLevelSelector(type, currentLevel) {
     const active = i === currentLevel;
     buttons += `<a href="${baseUrls[type]}?level=${i}"
       class="level-btn ${active ? 'level-btn-active' : ''}"
-      style="--level-color: ${info.color}">
+      style="--level-color: ${info.color}"
+      data-type="${type}" data-level="${i}">
       <span class="level-icon">${info.icon}</span>
       <span class="level-num">L${i}</span>
       <span class="level-name">${info.name}</span>
@@ -254,6 +242,42 @@ function renderLevelSelector(type, currentLevel) {
         <span class="level-desc-icon">${info.icon}</span>
         <span>${info.desc}</span>
       </div>
+      <div class="level-complete-row">
+        <button class="btn btn-success btn-sm" onclick="markComplete('${type}', ${currentLevel})" id="complete-btn-${type}-${currentLevel}">
+          &#x2705; Mark Completed
+        </button>
+        <button class="btn btn-share-trigger btn-sm" onclick="toggleSharePanel('${type}', ${currentLevel})">
+          &#x1F4E4; Share Progress
+        </button>
+      </div>
+      <div class="share-panel" id="share-panel-${type}-${currentLevel}" style="display:none">
+        <div class="share-panel-inner">
+          <span class="share-label">Share your achievement:</span>
+          <div class="share-buttons">
+            <a class="share-btn share-x" onclick="shareTo('x','${type}',${currentLevel})" title="Share on X">
+              <span class="share-icon">&#x1D54F;</span> X
+            </a>
+            <a class="share-btn share-linkedin" onclick="shareTo('linkedin','${type}',${currentLevel})" title="Share on LinkedIn">
+              <span class="share-icon">in</span> LinkedIn
+            </a>
+            <a class="share-btn share-facebook" onclick="shareTo('facebook','${type}',${currentLevel})" title="Share on Facebook">
+              <span class="share-icon">f</span> Facebook
+            </a>
+            <a class="share-btn share-reddit" onclick="shareTo('reddit','${type}',${currentLevel})" title="Share on Reddit">
+              <span class="share-icon">R</span> Reddit
+            </a>
+            <a class="share-btn share-whatsapp" onclick="shareTo('whatsapp','${type}',${currentLevel})" title="Share on WhatsApp">
+              <span class="share-icon">&#x1F4F1;</span> WhatsApp
+            </a>
+            <a class="share-btn share-telegram" onclick="shareTo('telegram','${type}',${currentLevel})" title="Share on Telegram">
+              <span class="share-icon">&#x2708;</span> Telegram
+            </a>
+          </div>
+          <button class="btn btn-sm btn-copy-link" onclick="copyProgressLink('${type}',${currentLevel})">
+            &#x1F517; Copy Link
+          </button>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -271,36 +295,192 @@ function renderResetButton() {
 }
 
 // =============================================
+//  PROGRESS TRACKING + SOCIAL SHARING JS
+// =============================================
+const progressAndShareScript = `
+<script>
+(function() {
+  // --- Progress Tracking (localStorage) ---
+  const STORAGE_KEY = 'spectrelab_progress';
+  const LEVELS = {
+    reflected: { 1:'Easy', 2:'Medium', 3:'Hard', 4:'Expert', 5:'Insane' },
+    stored:    { 1:'Easy', 2:'Medium', 3:'Hard', 4:'Expert', 5:'Insane' },
+    dom:       { 1:'Easy', 2:'Medium', 3:'Hard', 4:'Expert', 5:'Insane' }
+  };
+  const TYPE_LABELS = { reflected:'Reflected XSS', stored:'Stored XSS', dom:'DOM-Based XSS' };
+  const TYPE_ICONS = { reflected:'\\u{1F50D}', stored:'\\u{1F4AC}', dom:'\\u{1F3AF}' };
+
+  function getProgress() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    } catch(e) { return {}; }
+  }
+
+  function saveProgress(progress) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+    } catch(e) {}
+  }
+
+  window.markComplete = function(type, level) {
+    var progress = getProgress();
+    var key = type + '_' + level;
+    if (!progress[key]) {
+      progress[key] = { type: type, level: level, name: LEVELS[type][level], date: new Date().toISOString() };
+      saveProgress(progress);
+      var btn = document.getElementById('complete-btn-' + type + '-' + level);
+      if (btn) { btn.innerHTML = '\\u2705 Completed!'; btn.disabled = true; btn.classList.add('btn-completed'); }
+      updateNavProgress();
+    }
+  };
+
+  window.toggleSharePanel = function(type, level) {
+    var panel = document.getElementById('share-panel-' + type + '-' + level);
+    if (panel) { panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; }
+  };
+
+  function getShareText(type, level) {
+    var name = LEVELS[type][level];
+    var typeLabel = TYPE_LABELS[type];
+    var icon = TYPE_ICONS[type];
+    return icon + ' SpectreLab | I conquered ' + typeLabel + ' Level ' + level + ': ' + name + '! \\u{1F680}\\n\\nCan you beat it? \\u{1F449} https://github.com/cysec-don/XSS \\n\\n#SpectreLab #XSS #Cybersecurity #InfoSec #WebSecurity #EthicalHacking';
+  }
+
+  function getShareUrl(type, level) {
+    var baseUrls = { reflected: '/', stored: '/comments', dom: '/profile/user1' };
+    return window.location.origin + baseUrls[type] + '?level=' + level;
+  }
+
+  window.shareTo = function(platform, type, level) {
+    var text = getShareText(type, level);
+    var url = getShareUrl(type, level);
+    var githubUrl = 'https://github.com/cysec-don/XSS';
+    var encoded = encodeURIComponent(text);
+    var encodedUrl = encodeURIComponent(url);
+    var encodedGithub = encodeURIComponent(githubUrl);
+    var shareUrl = '';
+
+    switch(platform) {
+      case 'x':
+        shareUrl = 'https://twitter.com/intent/tweet?text=' + encoded;
+        break;
+      case 'linkedin':
+        shareUrl = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodedGithub + '&summary=' + encoded;
+        break;
+      case 'facebook':
+        shareUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodedGithub + '&quote=' + encoded;
+        break;
+      case 'reddit':
+        shareUrl = 'https://www.reddit.com/submit?url=' + encodedGithub + '&title=' + encodeURIComponent('SpectreLab | I conquered ' + TYPE_LABELS[type] + ' Level ' + level + ': ' + LEVELS[type][level] + '!');
+        break;
+      case 'whatsapp':
+        shareUrl = 'https://wa.me/?text=' + encoded;
+        break;
+      case 'telegram':
+        shareUrl = 'https://t.me/share/url?url=' + encodedGithub + '&text=' + encoded;
+        break;
+    }
+    if (shareUrl) window.open(shareUrl, '_blank', 'width=600,height=500');
+  };
+
+  window.copyProgressLink = function(type, level) {
+    var url = getShareUrl(type, level);
+    var text = getShareText(type, level);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text + '\\n' + url).then(function() {
+        showCopyToast('Progress copied to clipboard!');
+      });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text + '\\n' + url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showCopyToast('Progress copied to clipboard!');
+    }
+  };
+
+  function showCopyToast(msg) {
+    var toast = document.createElement('div');
+    toast.className = 'copy-toast';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(function() { toast.classList.add('toast-show'); }, 10);
+    setTimeout(function() { toast.classList.remove('toast-show'); setTimeout(function() { toast.remove(); }, 300); }, 2500);
+  }
+
+  // --- Highlight already completed levels on page load ---
+  function highlightCompleted() {
+    var progress = getProgress();
+    document.querySelectorAll('.level-btn').forEach(function(btn) {
+      var type = btn.dataset.type;
+      var level = btn.dataset.level;
+      if (type && level && progress[type + '_' + level]) {
+        btn.classList.add('level-btn-completed');
+      }
+    });
+    // Update complete buttons
+    document.querySelectorAll('[id^="complete-btn-"]').forEach(function(btn) {
+      var parts = btn.id.replace('complete-btn-', '').split('-');
+      var type = parts[0];
+      var level = parts[1];
+      if (progress[type + '_' + level]) {
+        btn.innerHTML = '\\u2705 Completed!';
+        btn.disabled = true;
+        btn.classList.add('btn-completed');
+      }
+    });
+  }
+
+  // --- Nav progress indicator ---
+  function updateNavProgress() {
+    var progress = getProgress();
+    var total = 15;
+    var completed = Object.keys(progress).length;
+    var badge = document.getElementById('nav-progress-badge');
+    if (badge) {
+      badge.textContent = completed + '/' + total;
+      badge.style.display = completed > 0 ? 'inline' : 'none';
+    }
+  }
+
+  // Init
+  document.addEventListener('DOMContentLoaded', function() {
+    highlightCompleted();
+    updateNavProgress();
+  });
+})();
+</script>`;
+
+// =============================================
 //  TEMPLATE RENDERERS
 // =============================================
 
-function renderLayout(title, content, extraHead = '', extraHeaders = {}) {
-  // Build CSP header if needed
-  if (extraHeaders.csp) {
-    // Don't actually set it — we embed it as a meta tag for demo purposes
-  }
-
+function renderLayout(title, content, extraHead = '') {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} - VulnLab</title>
+  <title>${title} - SpectreLab</title>
   <link rel="stylesheet" href="/css/style.css">
   ${extraHead}
 </head>
 <body>
   <nav class="navbar">
     <div class="nav-brand">
-      <span class="logo">&#9888;</span> VulnLab
+      <span class="logo">&#x1F47B;</span> SpectreLab
     </div>
     <div class="nav-links">
       <a href="/?level=1">Search</a>
       <a href="/comments?level=1">Comments</a>
       <a href="/profile/user1?level=1">Profile</a>
       <a href="/admin">Admin</a>
+      <a href="/progress" class="nav-progress-link">&#x1F3C6; Progress</a>
     </div>
     <div class="nav-actions">
+      <span id="nav-progress-badge" class="nav-progress-badge" style="display:none">0/15</span>
       <form method="POST" action="/reset" onsubmit="return confirm('Reset all data?')">
         <button type="submit" class="btn btn-danger btn-sm" title="Reset Database">&#x1F5D1;</button>
       </form>
@@ -310,8 +490,9 @@ function renderLayout(title, content, extraHead = '', extraHeaders = {}) {
     ${content}
   </main>
   <footer class="footer">
-    <p>VulnLab XSS Playground | For Educational Purposes Only | By <a href="mailto:cysecdon@gmail.com">Cysec Don</a></p>
+    <p>SpectreLab XSS Playground | For Educational Purposes Only | By <a href="mailto:cysecdon@gmail.com">Cysec Don</a></p>
   </footer>
+  ${progressAndShareScript}
 </body>
 </html>`;
 }
@@ -326,35 +507,25 @@ function renderSearchPage(query, level) {
   let filterNote = '';
 
   switch (level) {
-    case 1:
-      // Easy: No filtering at all
-      break;
-
+    case 1: break;
     case 2:
-      // Medium: "script" keyword blocked
       if (/script/i.test(query)) {
         displayQuery = query.replace(/script/gi, '<span class="blocked">BLOCKED</span>');
         inputVal = '';
         filterNote = 'The word "script" was filtered from your input.';
       }
       break;
-
     case 3:
-      // Hard: All on* event handlers stripped from the reflected output
       displayQuery = stripEventHandlers(query);
       if (displayQuery !== query) {
         filterNote = 'Event handler attributes (on*) were stripped from your input.';
       }
       break;
-
     case 4:
-      // Expert: Angle brackets encoded in HTML context, but also reflected in JS string
       displayQuery = encodeAngleBrackets(query);
       jsContext = escapeForJSString(query);
       break;
-
     case 5:
-      // Insane: CSP header + angle brackets encoded + JS context escaped
       displayQuery = encodeAngleBrackets(query);
       jsContext = escapeForJSString(query);
       extraHead = '<meta http-equiv="Content-Security-Policy" content="script-src \'self\'; style-src \'self\' \'unsafe-inline\'">';
@@ -366,7 +537,6 @@ function renderSearchPage(query, level) {
   let resultsSection;
   if (query) {
     if (level === 4 || level === 5) {
-      // Expert & Insane: Also reflect inside a JS string context
       resultsSection = `
         <h2>Search results for: ${displayQuery}</h2>
         <p class="muted">No results found. But your query was rendered beautifully.</p>
@@ -414,22 +584,15 @@ function renderSearchPage(query, level) {
 function renderCommentsPage(level) {
   const levelInfo = getLevelInfo('stored', level);
 
-  let commentHTML = comments.map(c => {
-    let displayAuthor = c.author;
-    let displayText = c.text;
-
-    // Output-side filtering based on current viewing level
-    // (Storage-side filtering already happened on POST)
-    // For display, we show what was stored
-
-    return `<div class="comment">
+  let commentHTML = comments.map(c =>
+    `<div class="comment">
       <div class="comment-header">
-        <strong>${displayAuthor}</strong>
+        <strong>${c.author}</strong>
         <small>${c.date}</small>
       </div>
-      <div class="comment-body">${displayText}</div>
-    </div>`;
-  }).join('');
+      <div class="comment-body">${c.text}</div>
+    </div>`
+  ).join('');
 
   if (comments.length === 0) {
     commentHTML = '<p class="muted">No comments yet. Be the first to inject something!</p>';
@@ -476,25 +639,20 @@ function renderCommentsPage(level) {
 // ─── PROFILE PAGE (DOM-Based XSS) ───
 function renderProfilePage(profile, username, level) {
   const levelInfo = getLevelInfo('dom', level);
-
   const levelSelector = renderLevelSelector('dom', level);
-
   let domScript = '';
   let extraHead = '';
   let extraContent = '';
 
   switch (level) {
     case 1:
-      // Easy: Direct innerHTML from hash
       domScript = `
         var hash = window.location.hash.substring(1);
         if (hash) {
           document.getElementById('dynamic-content').innerHTML = decodeURIComponent(hash);
         }`;
       break;
-
     case 2:
-      // Medium: Filter script and on* before innerHTML
       domScript = `
         var hash = window.location.hash.substring(1);
         if (hash) {
@@ -504,36 +662,25 @@ function renderProfilePage(profile, username, level) {
           document.getElementById('dynamic-content').innerHTML = filtered;
         }`;
       break;
-
     case 3:
-      // Hard: "Sanitizer" encodes angle brackets, but has a bug with SVG
-      // The bug: it encodes < and > BUT then processes SVG tags which can
-      // re-introduce content via namespace parsing. Specifically, <svg> tags
-      // are NOT encoded (intentional bug in the sanitizer).
       domScript = `
         var hash = window.location.hash.substring(1);
         if (hash) {
           var sanitized = decodeURIComponent(hash);
-          // Bug: SVG tags are allowed through (developer thought SVG was safe)
           var parts = sanitized.split(/(<\\/?svg[^>]*>)/gi);
           var result = parts.map(function(part, i) {
-            if (/<\\/?svg[^>]*>/i.test(part)) return part; // SVG allowed through (BUG)
+            if (/<\\/?svg[^>]*>/i.test(part)) return part;
             return part.replace(/</g, '&lt;').replace(/>/g, '&gt;');
           }).join('');
           document.getElementById('dynamic-content').innerHTML = result;
         }`;
       break;
-
     case 4:
-      // Expert: textContent is used (safe), but there's also an eval() that
-      // processes the hash if it starts with "calc:"
       domScript = `
         var hash = window.location.hash.substring(1);
         if (hash) {
           var decoded = decodeURIComponent(hash);
-          // Safe: using textContent instead of innerHTML
           document.getElementById('dynamic-content').textContent = decoded;
-          // VULNERABLE: Developer added a "calculator" feature that uses eval
           if (decoded.startsWith('calc:')) {
             try {
               var expr = decoded.substring(5);
@@ -546,29 +693,19 @@ function renderProfilePage(profile, username, level) {
         }`;
       extraContent = `<div id="calc-result" class="calc-result"></div>`;
       break;
-
     case 5:
-      // Insane: CSP + textContent + no eval. Only postMessage through trusted iframe.
-      // The page has an iframe that reads the hash and sends it via postMessage.
-      // The parent listens and renders it with innerHTML (the vulnerability).
       extraHead = '<meta http-equiv="Content-Security-Policy" content="script-src \'self\'; style-src \'self\' \'unsafe-inline\'; frame-src \'self\'">';
       domScript = `
-        // The page itself uses textContent (safe)
         var hash = window.location.hash.substring(1);
         if (hash) {
           document.getElementById('dynamic-content').textContent = decodeURIComponent(hash);
         }
-        // VULNERABLE: Parent listens for postMessage from the embedded widget iframe
-        // The iframe reads the hash and posts it - and the parent uses innerHTML
         window.addEventListener('message', function(e) {
-          // Bug: No origin check! Any origin can send messages.
           if (e.data && e.data.type === 'widget-data') {
             document.getElementById('dynamic-content').innerHTML = e.data.content;
           }
         });`;
-      // The iframe that reads the hash and posts it
-      extraContent = `
-        <iframe src="/dom-widget.html" class="widget-iframe" title="Dynamic Widget"></iframe>`;
+      extraContent = `<iframe src="/dom-widget.html" class="widget-iframe" title="Dynamic Widget"></iframe>`;
       break;
   }
 
@@ -614,8 +751,7 @@ function renderProfilePage(profile, username, level) {
   return renderLayout('Profile', content, extraHead);
 }
 
-// ─── DOM WIDGET IFRAME (for Level 5 DOM XSS) ───
-// This iframe reads the parent's hash and sends it via postMessage
+// ─── DOM WIDGET IFRAME ───
 app.get('/dom-widget.html', (req, res) => {
   res.type('text/html');
   res.send(`<!DOCTYPE html>
@@ -630,20 +766,17 @@ app.get('/dom-widget.html', (req, res) => {
 <body>
   <div id="widget-content">Dynamic Widget: No data</div>
   <script>
-    // Read the parent's hash and send it via postMessage
     try {
       var hash = window.parent.location.hash.substring(1);
       if (hash) {
         var decoded = decodeURIComponent(hash);
         document.getElementById('widget-content').textContent = 'Hash: ' + decoded;
-        // VULNERABLE: Send the hash content to parent, which uses innerHTML
         window.parent.postMessage({
           type: 'widget-data',
           content: decoded
-        }, '*'); // Bug: target origin is '*' instead of specific origin
+        }, '*');
       }
     } catch(e) {
-      // Cross-origin: can't read parent hash, but can still receive messages
       document.getElementById('widget-content').textContent = 'Widget loaded (cross-origin)';
     }
   </script>
@@ -692,15 +825,9 @@ function renderAdminPage() {
       <h3>User Comments</h3>
       <table class="admin-table">
         <thead>
-          <tr>
-            <th>Author</th>
-            <th>Comment</th>
-            <th>Date</th>
-          </tr>
+          <tr><th>Author</th><th>Comment</th><th>Date</th></tr>
         </thead>
-        <tbody>
-          ${commentRows}
-        </tbody>
+        <tbody>${commentRows}</tbody>
       </table>
     </div>
     <div class="hint-box">
@@ -713,6 +840,134 @@ function renderAdminPage() {
   return renderLayout('Admin', content);
 }
 
+// ─── PROGRESS DASHBOARD ───
+function renderProgressPage() {
+  const types = [
+    { key: 'reflected', label: 'Reflected XSS', icon: '\u{1F50D}', page: '/' },
+    { key: 'stored', label: 'Stored XSS', icon: '\u{1F4AC}', page: '/comments' },
+    { key: 'dom', label: 'DOM-Based XSS', icon: '\u{1F3AF}', page: '/profile/user1' }
+  ];
+
+  let cards = types.map(t => {
+    let levelRows = '';
+    for (let i = 1; i <= 5; i++) {
+      const info = LEVELS[t.key][i];
+      levelRows += `
+        <div class="progress-level-row" data-type="${t.key}" data-level="${i}">
+          <span class="progress-level-icon">${info.icon}</span>
+          <span class="progress-level-name">L${i}: ${info.name}</span>
+          <span class="progress-level-status" id="progress-status-${t.key}-${i}">&#x2B55;</span>
+          <button class="btn btn-success btn-xs" onclick="markComplete('${t.key}',${i})" id="progress-complete-${t.key}-${i}">&#x2705; Mark</button>
+          <button class="btn btn-share-trigger btn-xs" onclick="shareProgress('${t.key}',${i})" title="Share">&#x1F4E4;</button>
+        </div>`;
+    }
+    return `
+      <div class="progress-card">
+        <div class="progress-card-header">
+          <span class="progress-type-icon">${t.icon}</span>
+          <span class="progress-type-name">${t.label}</span>
+          <a href="${t.page}?level=1" class="btn btn-primary btn-xs">Go &#x2192;</a>
+        </div>
+        <div class="progress-levels">${levelRows}</div>
+      </div>`;
+  }).join('');
+
+  const content = `
+    <div class="page-header">
+      <h1>&#x1F3C6; Your Progress</h1>
+      <p class="subtitle">Track your conquests across all XSS challenges.</p>
+    </div>
+    <div class="progress-overview">
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="total-progress-bar" style="width:0%"></div>
+      </div>
+      <span class="progress-text" id="total-progress-text">0 / 15 levels completed</span>
+    </div>
+    <div class="progress-share-all">
+      <button class="btn btn-primary" onclick="shareAllProgress()">&#x1F4E4; Share Overall Progress</button>
+      <button class="btn btn-danger btn-sm" onclick="clearAllProgress()">&#x1F5D1; Reset Progress</button>
+    </div>
+    <div class="progress-cards">${cards}</div>
+    <div class="share-panel" id="share-panel-progress" style="display:none">
+      <div class="share-panel-inner">
+        <span class="share-label">Share your achievement:</span>
+        <div class="share-buttons">
+          <a class="share-btn share-x" onclick="sharePlatform('x')" title="Share on X"><span class="share-icon">&#x1D54F;</span> X</a>
+          <a class="share-btn share-linkedin" onclick="sharePlatform('linkedin')" title="Share on LinkedIn"><span class="share-icon">in</span> LinkedIn</a>
+          <a class="share-btn share-facebook" onclick="sharePlatform('facebook')" title="Share on Facebook"><span class="share-icon">f</span> Facebook</a>
+          <a class="share-btn share-reddit" onclick="sharePlatform('reddit')" title="Share on Reddit"><span class="share-icon">R</span> Reddit</a>
+          <a class="share-btn share-whatsapp" onclick="sharePlatform('whatsapp')" title="Share on WhatsApp"><span class="share-icon">&#x1F4F1;</span> WhatsApp</a>
+          <a class="share-btn share-telegram" onclick="sharePlatform('telegram')" title="Share on Telegram"><span class="share-icon">&#x2708;</span> Telegram</a>
+        </div>
+        <button class="btn btn-sm btn-copy-link" onclick="copyProgressLink('reflected',1)">&#x1F517; Copy Progress</button>
+      </div>
+    </div>
+    <script>
+    // Progress page specific scripts
+    (function() {
+      var STORAGE_KEY = 'spectrelab_progress';
+      var LEVELS_MAP = { 1:'Easy', 2:'Medium', 3:'Hard', 4:'Expert', 5:'Insane' };
+      var TYPE_LABELS = { reflected:'Reflected XSS', stored:'Stored XSS', dom:'DOM-Based XSS' };
+
+      function getProgress() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) { return {}; }
+      }
+
+      function refreshProgressUI() {
+        var progress = getProgress();
+        var total = 0;
+        ['reflected','stored','dom'].forEach(function(type) {
+          for (var i = 1; i <= 5; i++) {
+            var statusEl = document.getElementById('progress-status-' + type + '-' + i);
+            var btnEl = document.getElementById('progress-complete-' + type + '-' + i);
+            var key = type + '_' + i;
+            if (progress[key]) {
+              total++;
+              if (statusEl) statusEl.innerHTML = '\\u2705';
+              if (btnEl) { btnEl.innerHTML = '\\u2705 Done'; btnEl.disabled = true; btnEl.classList.add('btn-completed'); }
+            } else {
+              if (statusEl) statusEl.innerHTML = '\\u2B55';
+            }
+          }
+        });
+        var pct = Math.round((total / 15) * 100);
+        var bar = document.getElementById('total-progress-bar');
+        var text = document.getElementById('total-progress-text');
+        if (bar) bar.style.width = pct + '%';
+        if (text) text.textContent = total + ' / 15 levels completed (' + pct + '%)';
+      }
+
+      window.shareProgress = function(type, level) {
+        window.shareTo('x', type, level);
+      };
+
+      window.shareAllProgress = function() {
+        var panel = document.getElementById('share-panel-progress');
+        if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      };
+
+      var currentShareType = 'reflected';
+      var currentShareLevel = 1;
+
+      window.sharePlatform = function(platform) {
+        window.shareTo(platform, currentShareType, currentShareLevel);
+      };
+
+      window.clearAllProgress = function() {
+        if (confirm('Clear all progress data? This cannot be undone.')) {
+          localStorage.removeItem(STORAGE_KEY);
+          refreshProgressUI();
+          updateNavProgress();
+        }
+      };
+
+      document.addEventListener('DOMContentLoaded', refreshProgressUI);
+    })();
+    </script>`;
+
+  return renderLayout('Progress', content);
+}
+
 // =============================================
 //  START SERVER
 // =============================================
@@ -720,12 +975,14 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`
   +==============================================+
-  |   VulnLab XSS Playground                     |
+  |   SpectreLab XSS Playground                  |
   |   Running on http://localhost:${PORT}            |
   |                                              |
   |   5 Difficulty Levels per XSS Type:          |
   |     L1: Easy    L2: Medium   L3: Hard        |
   |     L4: Expert  L5: Insane                   |
+  |                                              |
+  |   Share progress to social media!            |
   |                                              |
   |   WARNING: This app is INTENTIONALLY         |
   |   VULNERABLE. Do NOT expose to the internet. |

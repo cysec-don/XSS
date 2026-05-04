@@ -1,4 +1,4 @@
-/* VulnLab XSS Playground - Stylesheet */
+/* SpectreLab XSS Playground - Stylesheet */
 /* Author: Cysec Don (cysecdon@gmail.com) */
 
 :root {
@@ -586,4 +586,299 @@ label {
   .level-buttons { gap: 0.35rem; }
   .level-btn { padding: 0.4rem 0.6rem; font-size: 0.75rem; }
   .level-name { display: none; }
+  .share-buttons { flex-wrap: wrap; }
+  .progress-level-row { flex-wrap: wrap; }
+}
+
+/* ─── NAV PROGRESS BADGE ─── */
+.nav-progress-badge {
+  background: rgba(106, 178, 130, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(106, 178, 130, 0.3);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: 0.03em;
+}
+
+.nav-progress-link {
+  color: var(--green) !important;
+}
+
+/* ─── LEVEL COMPLETE + SHARE ROW ─── */
+.level-complete-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  align-items: center;
+}
+
+.btn-success {
+  background: rgba(106, 178, 130, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(106, 178, 130, 0.3);
+}
+.btn-success:hover {
+  background: rgba(106, 178, 130, 0.25);
+  border-color: var(--green);
+}
+
+.btn-completed {
+  opacity: 0.7;
+  cursor: default !important;
+}
+
+.btn-share-trigger {
+  background: rgba(95, 192, 225, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(95, 192, 225, 0.2);
+}
+.btn-share-trigger:hover {
+  background: rgba(95, 192, 225, 0.2);
+  border-color: var(--accent);
+}
+
+.btn-xs {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
+}
+
+.level-btn-completed {
+  position: relative;
+}
+.level-btn-completed::after {
+  content: '\2705';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 0.6rem;
+}
+
+/* ─── SHARE PANEL ─── */
+.share-panel {
+  margin-top: 0.75rem;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.share-panel-inner {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.share-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.share-buttons {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.share-icon {
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-family: var(--font-sans);
+}
+
+.share-x {
+  background: rgba(255,255,255,0.06);
+  color: #e0e0e0;
+  border-color: rgba(255,255,255,0.12);
+}
+.share-x:hover { background: rgba(255,255,255,0.12); border-color: #555; }
+
+.share-linkedin {
+  background: rgba(10,102,194,0.15);
+  color: #5eb5f7;
+  border-color: rgba(10,102,194,0.25);
+}
+.share-linkedin:hover { background: rgba(10,102,194,0.25); border-color: #0a66c2; }
+
+.share-facebook {
+  background: rgba(24,119,242,0.15);
+  color: #6cb4f7;
+  border-color: rgba(24,119,242,0.25);
+}
+.share-facebook:hover { background: rgba(24,119,242,0.25); border-color: #1877f2; }
+
+.share-reddit {
+  background: rgba(255,69,0,0.12);
+  color: #ff8a65;
+  border-color: rgba(255,69,0,0.2);
+}
+.share-reddit:hover { background: rgba(255,69,0,0.22); border-color: #ff4500; }
+
+.share-whatsapp {
+  background: rgba(37,211,102,0.12);
+  color: #5fd89a;
+  border-color: rgba(37,211,102,0.2);
+}
+.share-whatsapp:hover { background: rgba(37,211,102,0.22); border-color: #25d366; }
+
+.share-telegram {
+  background: rgba(0,136,204,0.12);
+  color: #5cc8f0;
+  border-color: rgba(0,136,204,0.2);
+}
+.share-telegram:hover { background: rgba(0,136,204,0.22); border-color: #0088cc; }
+
+.btn-copy-link {
+  background: rgba(192, 165, 111, 0.1);
+  color: var(--yellow);
+  border: 1px solid rgba(192, 165, 111, 0.2);
+}
+.btn-copy-link:hover {
+  background: rgba(192, 165, 111, 0.2);
+  border-color: var(--yellow);
+}
+
+/* ─── COPY TOAST ─── */
+.copy-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--green);
+  color: var(--bg-primary);
+  padding: 0.65rem 1.5rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 9999;
+  pointer-events: none;
+}
+.copy-toast.toast-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ─── PROGRESS PAGE ─── */
+.progress-overview {
+  margin-bottom: 1.5rem;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 12px;
+  background: var(--bg-input);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--accent));
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+.progress-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.progress-share-all {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.progress-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.progress-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.progress-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.progress-type-icon {
+  font-size: 1.3rem;
+}
+
+.progress-type-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.progress-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.progress-level-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  transition: background var(--transition);
+}
+.progress-level-row:hover {
+  background: rgba(95, 192, 225, 0.04);
+}
+
+.progress-level-icon {
+  font-size: 0.9rem;
+}
+
+.progress-level-name {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.progress-level-status {
+  font-size: 0.85rem;
 }

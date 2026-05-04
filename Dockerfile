@@ -1,4 +1,4 @@
-# VulnLab XSS Playground - Dockerfile
+# SpectreLab XSS Playground - Dockerfile
 # Author: Cysec Don (cysecdon@gmail.com)
 #
 # ⚠️  WARNING: This builds an INTENTIONALLY VULNERABLE application.
@@ -7,7 +7,7 @@
 FROM node:18-alpine
 
 LABEL maintainer="Cysec Don <cysecdon@gmail.com>"
-LABEL description="VulnLab - Intentionally Vulnerable XSS Playground"
+LABEL description="SpectreLab - Intentionally Vulnerable XSS Playground"
 LABEL warning="This application is intentionally vulnerable. DO NOT expose to the internet."
 
 WORKDIR /app
@@ -28,8 +28,8 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD wget -qO- http://localhost:3001/ || exit 1
 
 # Run as non-root user for minimal safety
-RUN addgroup -S vulnlab && adduser -S vulnlab -G vulnlab
-USER vulnlab
+RUN addgroup -S spectrelab && adduser -S spectrelab -G spectrelab
+USER spectrelab
 
 # Start the server
 CMD ["node", "server.js"]

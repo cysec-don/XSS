@@ -1,4 +1,4 @@
-# VulnLab XSS Playground - Docker Compose
+# SpectreLab XSS Playground - Docker Compose
 # Author: Cysec Don (cysecdon@gmail.com)
 #
 # ⚠️  WARNING: This application is INTENTIONALLY VULNERABLE.
@@ -11,11 +11,11 @@
 #   docker compose build --no-cache  # Rebuild from scratch
 
 services:
-  vulnlab:
+  spectrelab:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: vulnlab-xss
+    container_name: spectrelab-xss
     ports:
       - "3001:3001"
     environment:
@@ -30,7 +30,7 @@ services:
       start_period: 10s
 
   # Optional: BeEF (Browser Exploitation Framework) for advanced exercises
-  # Uncomment the section below to run BeEF alongside VulnLab
+  # Uncomment the section below to run BeEF alongside SpectreLab
   # beef:
   #   image: beefproject/beef
   #   container_name: beef-xss
